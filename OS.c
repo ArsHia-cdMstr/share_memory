@@ -273,7 +273,7 @@ int main() {
   // end of ch2
 
   // start ch3 process
-  pid_t ch3 = fork();
+  pid_t ch3 = vfork();
 
   if (ch3 < 0){
     perror("the craetion of ch3 process falid \n");
