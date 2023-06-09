@@ -20,6 +20,10 @@ int main() {
   // pid_t P = getpid();
   pid_t ch2;
 
+  int ch1_value;
+  float ch2_value;
+  int ch3_value;
+
   float a, b, c;
 
   FILE* fp;
@@ -120,23 +124,35 @@ int main() {
     printf("inter input of ch1 process :");
     scanf("%d", &input_ch1);
 
-    int ch1_value = factorial + sum_square + input_ch1;
+    int ch1_val = factorial + sum_square + input_ch1;
 
-    printf("this is ch1_value: %d\n", ch1_value);
+    printf("this is ch1_value: %d\n", ch1_val);
 
-    fprintf(fp, "%d", ch1_value);
+    fprintf(fp, "%d", ch1_val);
 
     fclose(fp);
+
+    *shared_data = ch1_val;
 
     // exit for ch1 
     exit(EXIT_SUCCESS);
   }
+
+  ch1_value = *shared_data;
 
   int status1;
   waitpid(ch1, &status1, 0);
 
   // todo : return the achived var to parent process
   // ch2 process starts here 
+
+  int pipels_p_2[2];
+
+  if (pipe(pipels_p_2) == -1 ){
+    perror("pipe p, ch2 creation faild");
+    exit(EXIT_FAILURE);
+  }
+
   ch2 = fork();
 
   if (ch2 < 0) {
@@ -227,18 +243,29 @@ int main() {
 
 
       read(pipels2_22[0], &avrage, sizeof(float));
-      printf("this is the avrage : %f\n", avrage);
       close(pipels2_22[0]);
+
+      printf("this is the avrage : %f\n", avrage);
 
       int status;
       waitpid(ch22, &status, 0);
     }
+    float ch2_val = variance + avrage ;
+    printf("ch2 output: %f\n", ch2_val);
 
-    printf("ch2 output: %f\n", (variance + avrage));
+    close(pipels_p_2[0]);
+    write(pipels_p_2[1], &ch2_val, sizeof(float));
+    close(pipels_p_2[1]);
 
 
-    exit(2);
+    exit(EXIT_SUCCESS);
   }
+
+  close(pipels_p_2[1]);
+  read(pipels_p_2[0], &ch2_value, sizeof(float));
+  close(pipels_p_2[0]);
+
+
 
   int status2;
 
@@ -265,8 +292,10 @@ int main() {
   waitpid(ch3, &status3, 0);
   // end ch3 process
 
-  int ch3_value = *shared_data ;
+  ch3_value = *shared_data ;
 
+  printf("value of ch1 : %d\n", ch1_value);
+  printf("value of ch2 : %f\n", ch2_value);
   printf("value of ch3 : %d\n", ch3_value);
 
 
