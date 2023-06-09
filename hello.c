@@ -1,55 +1,59 @@
-// C program for passing value from
-// child process to parent process
-#include <pthread.h>
 #include <stdio.h>
-#include <sys/types.h>
-#include <unistd.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
 #include <sys/wait.h>
-#define MAX 10
 
-int main()
-{
+int main() {
+    int shmid;
+    key_t key = 1234;
+    int *shared_data;
 
-int fd[2], i = 0;
-pipe(fd);
-pid_t pid = fork();
+    // Create a shared memory segment
+    shmid = shmget(key, sizeof(int), IPC_CREAT | 0666);
+    if (shmid < 0) {
+        perror("shmget");
+        exit(EXIT_FAILURE);
+    }
 
-if(pid > 0) {
-	wait(NULL);
+    // Attach the shared memory segment to the address space of the parent and child processes
+    shared_data = (int*) shmat(shmid, NULL, 0);
+    if (shared_data == (int*) -1) {
+        perror("shmat");
+        exit(EXIT_FAILURE);
+    }
 
-	// closing the standard input
-	close(0);
+    // Fork a child process
+    pid_t pid = fork();
+    if (pid == -1) {
+        perror("fork");
+        exit(EXIT_FAILURE);
+    }
 
-	// no need to use the write end of pipe here so close it
-	close(fd[1]);
+    if (pid == 0) { // Child process
+        int num_to_send = 42; // The integer to send to the parent process
 
-	// duplicating fd[0] with standard input 0
-	//dup(fd[0]);
-	int arr[MAX];
+        *shared_data = num_to_send; // Write the integer to the shared memory segment
 
-	// n stores the total bytes read successfully
-	int n = read(fd[0], arr, sizeof(arr));
-	for ( i = 0;i < n/4; i++)
+        exit(EXIT_SUCCESS);
+    } else { // Parent process
+        int status;
 
-		// printing the array received from child process
-		printf("%d ", arr[i]);
-}
-else if( pid == 0 ) {
-	int arr[] = {1, 2, 3, 4, 5};
+        // Wait for the child process to write to the shared memory segment
+        waitpid(pid, &status, 0);
 
-	// no need to use the read end of pipe here so close it
-	close(fd[0]);
+        int num_from_child = *shared_data; // Read the integer from the shared memory segment
 
-	// closing the standard output
-	close(1);	
+        printf("Received number %d from child process\n", num_from_child);
 
-	// duplicating fd[0] with standard output 1
-	//dup(fd[1]);
-	write(1, arr, sizeof(arr));
-}
+        // Detach the shared memory segment from the address space of the parent and child processes
+        shmdt(shared_data);
 
-else {
-	perror("error\n"); //fork()
-}
+        // Delete the shared memory segment
+        shmctl(shmid, IPC_RMID, NULL);
+    }
+
+    return 0;
 }

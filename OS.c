@@ -4,131 +4,142 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
+
+float calculate_variance(float a, float b, float c) {
+    float mean = (a + b + c) / 3;
+    float variance = ((a - mean) * (a - mean) + (b - mean) * (b - mean) + (c - mean) * (c - mean)) / 3;
+    return variance;
+}
+
 int main() {
 
-  // pid_t ch1, ch2, ch3, ch11, ch12;
+  // pid_t ch2, ch2, ch3, ch21, ch22;
   // pid_t ch21, ch22;
   // pid_t P = getpid();
-  pid_t ch1 ;
+  pid_t ch2 ;
 
-  int a, b, c ;
-  scanf("%d", &a);
-  scanf("%d", &b);
-  scanf("%d", &c);
+  float a, b, c ;
+  scanf("%f", &a);
+  scanf("%f", &b);
+  scanf("%f", &c);
 
-
-  ch1 = fork();
-
-  if (ch1 < 0){
-    printf("ch1 creation process faild");
+  // ch1 process starts here
   
-  }else if(ch1 == 0){// ch1 process
 
-  int factorial ;
-  int square_sum ;
 
-    //Note: creation pipe ch1, ch11
-    int pipels1_11[2];
+  // ch2 process starts here
+  ch2 = fork();
+
+  if (ch2 < 0){
+    printf("ch2 creation process faild");
+  
+  }else if(ch2 == 0){// ch2 process
+
+  float variance ;
+  float avrage ;
+
+    //Note: creation pipe ch2, ch21
+    int pipels2_21[2];
     // pipels1-11[0] : read
     // pipels1-11[1] : write
 
-    if(pipe(pipels1_11) == -1){
-      printf("pipe ch1 ,ch11 cration faild");
-      exit(11);
+    if(pipe(pipels2_21) == -1){
+      printf("pipe ch2 ,ch21 cration faild");
+      exit(21);
     }
 
-    //Note: go into ch11 process
-    pid_t ch11  = fork();
+    //Note: go into ch21 process
+    pid_t ch21  = fork();
 
-    if (ch11 < 0){
-      printf("ch11 creation process faild");
-    }else if (ch11 == 0){
+    if (ch21 < 0){
+      printf("ch21 creation process faild");
+    }else if (ch21 == 0){
       
-      //Note: ch11 process
+      //Note: ch21 process
 
-      close(pipels1_11[0]); // close the unused read side of pipe
+      close(pipels2_21[0]); // close the unused read side of pipe
 
-      int i, sum = 0;
-      for(i = 1; i <= a; i++)
-        sum += (i*i);
+      float var = calculate_variance(a, b, c);
+      // int i, sum = 0;
+      // for(i = 1; i <= a; i++)
+      //   sum += (i*i);
       
-      write(pipels1_11[1], &sum, sizeof(int)); 
-      close(pipels1_11[1]);
+      write(pipels2_21[1], &var, sizeof(float)); 
+      close(pipels2_21[1]);
 
-      exit(11);
+      exit(21);
     }else {
-      // ch1 process
+      // ch2 process
 
-      close(pipels1_11[1]); // close the unused read side of pipe 
+      close(pipels2_21[1]); // close the unused read side of pipe 
       
 
-      read(pipels1_11[0], &square_sum, sizeof(int));
-      printf("this is the square sums : %d\n", square_sum);
-      close(pipels1_11[0]);
+      read(pipels2_21[0], &variance, sizeof(float));
+      printf("this is the variance : %f\n", variance);
+      close(pipels2_21[0]);
       int status;
 
-      waitpid(ch11, &status, 0);
+      waitpid(ch21, &status, 0);
     }
 
-  int pipels1_12[2];
+  int pipels2_22[2];
 
-  if(pipe(pipels1_12) == -1){
-    printf("pipe ch1 ,ch12 cration faild");
-    exit(12);
+  if(pipe(pipels2_22) == -1){
+    printf("pipe ch2 ,ch22 cration faild");
+    exit(22);
   }
 
-    //Note: go into ch12 process
+    //Note: go into ch22 process
 
-  pid_t ch12 = fork();
+  pid_t ch22 = fork();
     
-  if (ch12 < 0){
-    printf("ch12 creation process faild");
-    }else if (ch12 == 0){
+  if (ch22 < 0){
+    printf("ch22 creation process faild");
+    }else if (ch22 == 0){
       
-      //Note: ch12 process
+      //Note: ch22 process
 
-      close(pipels1_12[0]); // close the unused read side of pipe
+      close(pipels2_22[0]); // close the unused read side of pipe
 
-      int i, factorial = 1;
-      int temp = 1 ;
-      int temp2 ;
-      for(i = 2; i < a; i++){
-        temp2 = factorial;
-        factorial += temp ;
-        temp = temp2 ;
-      }
 
-      write(pipels1_12[1], &factorial, sizeof(int)); 
-      close(pipels1_12[1]);
+      float avr = (a + b + c) / 3;
 
-      exit(12);
+      // int i, factorial = 1;
+      // int temp = 1 ;
+      // int temp2 ;
+      // for(i = 2; i < a; i++){
+      //   temp2 = factorial;
+      //   factorial += temp ;
+      //   temp = temp2 ;
+      // }
+
+      write(pipels2_22[1], &avr, sizeof(float)); 
+      close(pipels2_22[1]);
+
+      exit(22);
     }else {
-      // ch1 process
+      // ch2 process
 
-      close(pipels1_12[1]); // close the unused read side of pipe 
+      close(pipels2_22[1]); // close the unused read side of pipe 
       
 
-      read(pipels1_12[0], &factorial, sizeof(int));
-      printf("this is the factorial : %d\n", factorial);
-      close(pipels1_12[0]);
+      read(pipels2_22[0], &avrage, sizeof(float));
+      printf("this is the avrage : %f\n", avrage);
+      close(pipels2_22[0]);
 
       int status;
-      waitpid(ch12, &status, 0);
+      waitpid(ch22, &status, 0);
     }
 
-    int inputch1;
-
-    scanf("%d", &inputch1);
-
-    printf("ch1 output: %d\n", (inputch1 + factorial + square_sum));
+    printf("ch2 output: %f\n", (variance + avrage));
 
 
-    exit(1);
+    exit(2);
   }
 
   int status;
 
-  waitpid(ch1, &status, 0);
+  waitpid(ch2, &status, 0);
 
   
 
