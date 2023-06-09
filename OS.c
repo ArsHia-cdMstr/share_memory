@@ -29,6 +29,23 @@ int main() {
   scanf("%f", &b);
   scanf("%f", &c);
 
+  // build a shared memory space
+  int shmid;
+  key_t key = 1234;
+  int* shared_data;
+
+  shmid = shmget(key, sizeof(int), IPC_CREAT | 0666);
+  if (shmid < 0) {
+    perror("shmget");
+    exit(EXIT_FAILURE);
+  }
+
+  shared_data = (int*)shmat(shmid, NULL, 0);
+  if (shared_data == (int*)-1) {
+    perror("shmat");
+    exit(EXIT_FAILURE);
+  }
+
   // ch1 process starts here
 
   pid_t ch1 = fork();
@@ -39,22 +56,7 @@ int main() {
 
   if (ch1 == 0) {// ch1 process
 
-    // build a shared memory space
-    int shmid;
-    key_t key = 1234;
-    int* shared_data;
 
-    shmid = shmget(key, sizeof(int), IPC_CREAT | 0666);
-    if (shmid < 0) {
-      perror("shmget");
-      exit(EXIT_FAILURE);
-    }
-
-    shared_data = (int*)shmat(shmid, NULL, 0);
-    if (shared_data == (int*)-1) {
-      perror("shmat");
-      exit(EXIT_FAILURE);
-    }
 
     // start ch11 process
     pid_t ch11 = fork();
@@ -118,7 +120,7 @@ int main() {
     printf("inter input of ch1 process :");
     scanf("%d", &input_ch1);
 
-    int ch1_value = factorial + sum_square + input_ch1 ;
+    int ch1_value = factorial + sum_square + input_ch1;
 
     printf("this is ch1_value: %d\n", ch1_value);
 
@@ -238,10 +240,35 @@ int main() {
     exit(2);
   }
 
-  int status;
+  int status2;
 
-  waitpid(ch2, &status, 0);
+  waitpid(ch2, &status2, 0);
   // end of ch2
+
+  // start ch3 process
+  pid_t ch3 = fork();
+
+  if (ch3 < 0){
+    perror("the craetion of ch3 process falid \n");
+    exit(EXIT_FAILURE);
+  }
+  if(ch3 == 0){// ch3 process
+    int min = a;
+    if (b < a) min = b;
+    if (c < min) min = c;
+    *shared_data = min ;
+
+    exit(EXIT_SUCCESS);
+  }
+
+  int status3 ;
+  waitpid(ch3, &status3, 0);
+  // end ch3 process
+
+  int ch3_value = *shared_data ;
+
+  printf("value of ch3 : %d\n", ch3_value);
+
 
   return 0;
 }
